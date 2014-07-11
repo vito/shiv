@@ -64,6 +64,7 @@ func main() {
 	process, err := container.Run(warden.ProcessSpec{
 		Path: "bash",
 		Args: []string{"-l"},
+		TTY:  true,
 	}, warden.ProcessIO{
 		Stdin:  term,
 		Stdout: term,
