@@ -24,6 +24,12 @@ var wardenAddr = flag.String(
 	"warden server address",
 )
 
+var rootfs = flag.String(
+	"rootfs",
+	"docker:///ubuntu#14.04",
+	"rootfs for the container to create",
+)
+
 func main() {
 	flag.Parse()
 
@@ -44,7 +50,7 @@ func main() {
 	var container warden.Container
 	if handle == "" {
 		container, err = client.Create(warden.ContainerSpec{
-			RootFSPath: "docker:///ubuntu#14.04",
+			RootFSPath: *rootfs,
 		})
 	} else {
 		container, err = client.Lookup(handle)
