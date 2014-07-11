@@ -30,6 +30,12 @@ var rootfs = flag.String(
 	"rootfs for the container to create",
 )
 
+var create = flag.Bool(
+	"create",
+	false,
+	"create a new container",
+)
+
 func main() {
 	flag.Parse()
 
@@ -48,10 +54,22 @@ func main() {
 	client := wclient.New(wconnection.New(*wardenNetwork, *wardenAddr))
 
 	var container warden.Container
-	if handle == "" {
+
+	if *create {
 		container, err = client.Create(warden.ContainerSpec{
 			RootFSPath: *rootfs,
 		})
+	} else if handle == "" {
+		containers, err := client.Containers(nil)
+		if err != nil {
+			log.Fatalln("failed to get containers")
+		}
+
+		if len(containers) == 0 {
+			log.Fatalln("no containers")
+		}
+
+		container = containers[len(containers)-1]
 	} else {
 		container, err = client.Lookup(handle)
 	}
@@ -62,9 +80,10 @@ func main() {
 	}
 
 	process, err := container.Run(warden.ProcessSpec{
-		Path: "bash",
-		Args: []string{"-l"},
-		TTY:  true,
+		Path:       "bash",
+		Args:       []string{"-l"},
+		TTY:        true,
+		Privileged: true,
 	}, warden.ProcessIO{
 		Stdin:  term,
 		Stdout: term,
