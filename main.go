@@ -4,7 +4,10 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/kr/pty"
 	"github.com/pkg/term"
 
 	wclient "github.com/cloudfoundry-incubator/garden/client"
@@ -82,6 +85,7 @@ func main() {
 	process, err := container.Run(warden.ProcessSpec{
 		Path:       "bash",
 		Args:       []string{"-l"},
+		Env:        []string{"TERM=" + os.Getenv("TERM")},
 		TTY:        true,
 		Privileged: true,
 	}, warden.ProcessIO{
@@ -93,6 +97,25 @@ func main() {
 		term.Restore()
 		log.Fatalln("failed to run:", err)
 	}
+
+	rows, cols, err := pty.Getsize(os.Stdin)
+	if err == nil {
+		process.SetWindowSize(cols, rows)
+	}
+
+	resized := make(chan os.Signal, 10)
+	signal.Notify(resized, syscall.SIGWINCH)
+
+	go func() {
+		for {
+			<-resized
+
+			rows, cols, err := pty.Getsize(os.Stdin)
+			if err == nil {
+				process.SetWindowSize(cols, rows)
+			}
+		}
+	}()
 
 	process.Wait()
 	term.Restore()
