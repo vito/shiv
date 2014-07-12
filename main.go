@@ -44,19 +44,10 @@ func main() {
 
 	handle := flag.Arg(0)
 
-	term, err := term.Open(os.Stdin.Name())
-	if err != nil {
-		log.Fatalln("failed to open terminal:", err)
-	}
-
-	err = term.SetRaw()
-	if err != nil {
-		log.Fatalln("failed to thaw terminal:", err)
-	}
-
 	client := wclient.New(wconnection.New(*wardenNetwork, *wardenAddr))
 
 	var container warden.Container
+	var err error
 
 	if *create {
 		container, err = client.Create(warden.ContainerSpec{
@@ -78,8 +69,17 @@ func main() {
 	}
 
 	if err != nil {
-		term.Restore()
 		log.Fatalln("failed to lookup container:", err)
+	}
+
+	term, err := term.Open(os.Stdin.Name())
+	if err != nil {
+		log.Fatalln("failed to open terminal:", err)
+	}
+
+	err = term.SetRaw()
+	if err != nil {
+		log.Fatalln("failed to thaw terminal:", err)
 	}
 
 	process, err := container.Run(warden.ProcessSpec{
